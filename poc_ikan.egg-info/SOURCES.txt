@@ -1,0 +1,7 @@
+README.md
+pyproject.toml
+poc_ikan.egg-info/PKG-INFO
+poc_ikan.egg-info/SOURCES.txt
+poc_ikan.egg-info/dependency_links.txt
+poc_ikan.egg-info/requires.txt
+poc_ikan.egg-info/top_level.txt

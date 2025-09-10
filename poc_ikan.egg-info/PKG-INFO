@@ -1,0 +1,67 @@
+Metadata-Version: 2.4
+Name: poc-ikan
+Version: 0.1.0
+Summary: Add your description here
+Requires-Python: >=3.12
+Description-Content-Type: text/markdown
+Requires-Dist: fastapi>=0.115.0
+Requires-Dist: uvicorn>=0.30.0
+Requires-Dist: opencv-python>=4.10.0
+Requires-Dist: ultralytics>=8.2.0
+
+# poc-ikan
+
+## Fish Detection with Webcam using FastAPI
+
+This project demonstrates real-time fish detection using a webcam, YOLO model, and FastAPI.
+
+### Features
+
+- Real-time webcam video streaming
+- Fish detection using YOLO model
+- Web interface with start/stop scanning controls
+- Automatic detection confirmation after 3 seconds of consistent detection
+
+### Installation
+
+1. Install dependencies using UV:
+   ```bash
+   uv pip install -e .
+   ```
+
+   Or using pip:
+   ```bash
+   pip install -e .
+   ```
+
+### Usage
+
+1. Run the FastAPI application:
+   ```bash
+   uvicorn webcam_api:app --host 0.0.0.0 --port 3000 --reload
+   ```
+
+   Or:
+   ```bash
+   python webcam_api.py
+   ```
+
+2. Open your browser and navigate to `http://localhost:3000`
+
+3. Click "Start Scanning" to begin fish detection
+
+4. The system will automatically capture and display the result when a fish is detected with high confidence
+
+### API Endpoints
+
+- `GET /` - Serve the main web interface
+- `GET /video` - Stream webcam video with detection overlay
+- `GET /result` - Get current detection result
+- `GET /reset` - Reset detection state
+
+### Dependencies
+
+- FastAPI - Web framework
+- Uvicorn - ASGI server
+- OpenCV - Computer vision library
+- Ultralytics - YOLO implementation
