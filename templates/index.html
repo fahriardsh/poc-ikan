@@ -1,10 +1,75 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Fish Detection</title>
+    <title>🐟 Live Fish Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
   </head>
-  <body style="text-align:center;">
-    <h2>🐟 Live Fish Detection</h2>
-    <img src="{{ url_for('video') }}" width="800">
+  <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
+    <h2 class="text-2xl font-bold mb-4">🐟 Live Fish Detection</h2>
+
+    <!-- Video -->
+    <div class="bg-white shadow-md rounded-2xl overflow-hidden border w-full max-w-lg">
+      <img id="video-stream" src="" class="hidden w-full">
+      <img id="captured-image" src="" class="hidden w-full">
+    </div>
+
+    <!-- Result -->
+    <div id="result" class="mt-4 text-lg font-semibold text-gray-700">
+      🔍 Waiting...
+    </div>
+
+    <!-- Buttons -->
+    <div class="flex gap-4 mt-4">
+      <button onclick="startScan()" 
+        class="px-6 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium shadow">
+        Start Scanning
+      </button>
+      <button onclick="stopScan()" 
+        class="px-6 py-2 rounded-lg bg-gray-400 hover:bg-gray-500 text-white font-medium shadow">
+        Stop Scanning
+      </button>
+    </div>
+
+    <script>
+      let resultInterval;
+
+      async function getResult() {
+        try {
+          let res = await fetch("/result");
+          let data = await res.json();
+
+          if (data.status === "done") {
+            document.getElementById("video-stream").classList.add("hidden");
+            document.getElementById("captured-image").src =
+              "data:image/jpeg;base64," + data.image;
+            document.getElementById("captured-image").classList.remove("hidden");
+            document.getElementById("result").innerText =
+              "✅ Result: " + data.result;
+            stopScan();
+          } else {
+            document.getElementById("result").innerText =
+              "🔍 Scanning... " + data.result;
+          }
+        } catch (e) {
+          console.error("Error fetching result", e);
+        }
+      }
+
+      async function startScan() {
+        await fetch("/reset");
+        document.getElementById("video-stream").src =
+          "/video?" + new Date().getTime();
+        document.getElementById("video-stream").classList.remove("hidden");
+        document.getElementById("captured-image").classList.add("hidden");
+        document.getElementById("result").innerText = "🔍 Scanning...";
+        if (resultInterval) clearInterval(resultInterval);
+        resultInterval = setInterval(getResult, 1000);
+      }
+
+      function stopScan() {
+        document.getElementById("video-stream").src = "";
+        if (resultInterval) clearInterval(resultInterval);
+      }
+    </script>
   </body>
 </html>
