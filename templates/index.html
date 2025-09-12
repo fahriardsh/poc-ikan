@@ -3,73 +3,246 @@
   <head>
     <title>🐟 Live Fish Detection</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      .video-container {
+        position: relative;
+        width: 100%;
+        padding-top: 75%; /* 4:3 Aspect Ratio */
+      }
+      .video-container video, .video-container canvas, .video-container img {
+        position: absolute;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    </style>
   </head>
-  <body class="bg-gray-100 flex flex-col items-center justify-center min-h-screen p-4">
-    <h2 class="text-2xl font-bold mb-4">🐟 Live Fish Detection</h2>
+  <body class="bg-gray-100 min-h-screen p-4">
+    <div class="max-w-6xl mx-auto">
+      <h2 class="text-2xl font-bold mb-4 text-center">🐟 Live Fish Detection</h2>
 
-    <!-- Video -->
-    <div class="bg-white shadow-md rounded-2xl overflow-hidden border w-full max-w-lg">
-      <img id="video-stream" src="" class="hidden w-full">
-      <img id="captured-image" src="" class="hidden w-full">
-    </div>
+      <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Main Content -->
+        <div class="flex-1">
+          <!-- Video Container -->
+          <div class="bg-white shadow-md rounded-2xl overflow-hidden border">
+            <div class="video-container">
+              <video id="video" class="hidden"></video>
+              <canvas id="canvas" class="hidden"></canvas>
+              <img id="result-image" src="" class="hidden">
+            </div>
+          </div>
 
-    <!-- Result -->
-    <div id="result" class="mt-4 text-lg font-semibold text-gray-700">
-      🔍 Waiting...
-    </div>
+          <!-- Controls -->
+          <div class="flex flex-wrap gap-4 mt-4 justify-center">
+            <button id="start-btn" onclick="startWebcam()" 
+              class="px-6 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium shadow">
+              Start Webcam
+            </button>
+            <button id="stream-btn" onclick="startStreaming()" disabled
+              class="px-6 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-medium shadow disabled:opacity-50">
+              Start Streaming
+            </button>
+            <button id="stop-stream-btn" onclick="stopStreaming()" disabled
+              class="px-6 py-2 rounded-lg bg-yellow-500 hover:bg-yellow-600 text-white font-medium shadow disabled:opacity-50">
+              Stop Streaming
+            </button>
+            <button id="reset-btn" onclick="resetApp()" disabled
+              class="px-6 py-2 rounded-lg bg-gray-400 hover:bg-gray-500 text-white font-medium shadow disabled:opacity-50">
+              Reset
+            </button>
+          </div>
 
-    <!-- Buttons -->
-    <div class="flex gap-4 mt-4">
-      <button onclick="startScan()" 
-        class="px-6 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium shadow">
-        Start Scanning
-      </button>
-      <button onclick="stopScan()" 
-        class="px-6 py-2 rounded-lg bg-gray-400 hover:bg-gray-500 text-white font-medium shadow">
-        Stop Scanning
-      </button>
+          <!-- Status -->
+          <div id="result" class="mt-4 text-lg font-semibold text-gray-700 text-center">
+            🔍 Waiting...
+          </div>
+        </div>
+
+        <!-- Detection Results Sidebar -->
+        <div class="w-full lg:w-80">
+          <div class="bg-white shadow-md rounded-2xl overflow-hidden border h-full">
+            <div class="bg-blue-500 text-white p-3 font-bold">
+              Detection Results
+            </div>
+            <div id="detection-results" class="p-4 max-h-96 overflow-y-auto">
+              <p class="text-gray-500 text-center">No detections yet</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <script>
-      let resultInterval;
+      let video = document.getElementById('video');
+      let canvas = document.getElementById('canvas');
+      let resultImage = document.getElementById('result-image');
+      let resultDiv = document.getElementById('result');
+      let startBtn = document.getElementById('start-btn');
+      let streamBtn = document.getElementById('stream-btn');
+      let stopStreamBtn = document.getElementById('stop-stream-btn');
+      let resetBtn = document.getElementById('reset-btn');
+      let detectionResults = document.getElementById('detection-results');
+      let stream = null;
+      let streaming = false;
+      let streamInterval = null;
 
-      async function getResult() {
+      async function startWebcam() {
         try {
-          let res = await fetch("/result");
-          let data = await res.json();
-
-          if (data.status === "done") {
-            document.getElementById("video-stream").classList.add("hidden");
-            document.getElementById("captured-image").src =
-              "data:image/jpeg;base64," + data.image;
-            document.getElementById("captured-image").classList.remove("hidden");
-            document.getElementById("result").innerText =
-              "✅ Result: " + data.result;
-            stopScan();
-          } else {
-            document.getElementById("result").innerText =
-              "🔍 Scanning... " + data.result;
-          }
-        } catch (e) {
-          console.error("Error fetching result", e);
+          stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { 
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            } 
+          });
+          video.srcObject = stream;
+          video.classList.remove('hidden');
+          startBtn.disabled = true;
+          streamBtn.disabled = false;
+          resetBtn.disabled = false;
+          resultDiv.innerText = "📹 Webcam started. Click 'Start Streaming' to begin detection.";
+        } catch (err) {
+          console.error("Error accessing webcam: ", err);
+          resultDiv.innerText = "❌ Error accessing webcam: " + err.message;
         }
       }
 
-      async function startScan() {
-        await fetch("/reset");
-        document.getElementById("video-stream").src =
-          "/video?" + new Date().getTime();
-        document.getElementById("video-stream").classList.remove("hidden");
-        document.getElementById("captured-image").classList.add("hidden");
-        document.getElementById("result").innerText = "🔍 Scanning...";
-        if (resultInterval) clearInterval(resultInterval);
-        resultInterval = setInterval(getResult, 1000);
+      async function startStreaming() {
+        if (!stream) return;
+        
+        streaming = true;
+        streamBtn.disabled = true;
+        stopStreamBtn.disabled = false;
+        resultDiv.innerText = "🔍 Streaming and detecting...";
+        
+        // Start continuous detection
+        streamInterval = setInterval(captureAndDetect, 100); // Detect every 500ms
       }
 
-      function stopScan() {
-        document.getElementById("video-stream").src = "";
-        if (resultInterval) clearInterval(resultInterval);
+      async function stopStreaming() {
+        streaming = false;
+        if (streamInterval) {
+          clearInterval(streamInterval);
+          streamInterval = null;
+        }
+        stopStreamBtn.disabled = true;
+        streamBtn.disabled = false;
+        resultDiv.innerText = "⏸️ Streaming stopped.";
       }
+
+      async function captureAndDetect() {
+        if (!stream || !streaming) return;
+
+        // Draw current video frame to canvas
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        // Convert canvas to blob
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            resultDiv.innerText = "❌ Error capturing image";
+            return;
+          }
+
+          // Create FormData and send to backend
+          const formData = new FormData();
+          formData.append('file', blob, 'capture.jpg');
+
+          try {
+            const response = await fetch('/detect', {
+              method: 'POST',
+              body: formData
+            });
+
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.status === "success") {
+              // Display result image
+              resultImage.src = "data:image/jpeg;base64," + data.image;
+              resultImage.classList.remove('hidden');
+              video.classList.add('hidden');
+              
+              // Display result text
+              resultDiv.innerHTML = `✅ ${data.result}<br><span class="text-sm">Confidence: ${(data.confidence * 100).toFixed(1)}%</span>`;
+              
+              // Update detection results sidebar
+              updateDetectionResults(data.detections || []);
+            } else {
+              resultDiv.innerText = "❌ Detection failed";
+            }
+          } catch (error) {
+            console.error("Error during detection: ", error);
+            resultDiv.innerText = "❌ Error during detection: " + error.message;
+          }
+        }, 'image/jpeg');
+      }
+
+      function updateDetectionResults(detections) {
+        if (detections.length === 0) {
+          detectionResults.innerHTML = '<p class="text-gray-500 text-center">No fish detected</p>';
+          return;
+        }
+
+        let html = '<div class="space-y-3">';
+        detections.forEach((detection, index) => {
+          const confidence = (detection.confidence * 100).toFixed(1);
+          html += `
+            <div class="border border-gray-200 rounded-lg p-3">
+              <div class="font-semibold text-gray-800">${detection.class}</div>
+              <div class="text-sm text-gray-600">Confidence: ${confidence}%</div>
+              <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                <div class="bg-blue-600 h-2 rounded-full" style="width: ${confidence}%"></div>
+              </div>
+            </div>
+          `;
+        });
+        html += '</div>';
+        
+        detectionResults.innerHTML = html;
+      }
+
+      function resetApp() {
+        // Stop streaming if active
+        if (streaming) {
+          stopStreaming();
+        }
+        
+        // Stop webcam stream
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+          stream = null;
+        }
+
+        // Reset UI
+        video.classList.add('hidden');
+        resultImage.classList.add('hidden');
+        startBtn.disabled = false;
+        streamBtn.disabled = true;
+        stopStreamBtn.disabled = true;
+        resetBtn.disabled = true;
+        resultDiv.innerText = "🔍 Waiting...";
+        detectionResults.innerHTML = '<p class="text-gray-500 text-center">No detections yet</p>';
+      }
+
+      // Cleanup on page unload
+      window.addEventListener('beforeunload', () => {
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
+        if (streamInterval) {
+          clearInterval(streamInterval);
+        }
+      });
     </script>
   </body>
 </html>
