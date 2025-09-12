@@ -9,6 +9,7 @@ dependencies = [
     "uvicorn>=0.30.0",
     "opencv-python>=4.10.0",
     "ultralytics>=8.2.0",
+    "torch>=2.8.0",
 ]
 
 [build-system]

@@ -120,7 +120,7 @@
         resultDiv.innerText = "🔍 Streaming and detecting...";
         
         // Start continuous detection
-        streamInterval = setInterval(captureAndDetect, 500); // Detect every 500ms
+        streamInterval = setInterval(captureAndDetect, 100); // Detect every 500ms
       }
 
       async function stopStreaming() {

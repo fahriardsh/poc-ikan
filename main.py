@@ -8,16 +8,25 @@ from ultralytics import YOLO
 import numpy as np
 from typing import Optional, List
 import io
+import torch
 
 app = FastAPI()
 templates = Jinja2Templates(directory="templates")
 
 # Load YOLO model
 try:
-    model = YOLO("my_model/ikan-hias.pt")
+    model = YOLO("my_model/ikan-78/my_model.pt")
+    # Check if CUDA is available and model is using GPU
+    if torch.cuda.is_available():
+        device = "GPU"
+        model.to('cuda')
+    else:
+        device = "CPU"
+    print(f"Model loaded successfully on {device}")
 except FileNotFoundError:
     print("Model file not found. Using a placeholder model.")
     model = None
+    device = "Unknown"
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
@@ -37,6 +46,7 @@ async def detect_fish(file: UploadFile = File(...)):
         return JSONResponse({"error": "Invalid image"}, status_code=400)
     
     # Run detection
+    print(f"Running detection on {device}")
     results = model(img)
     annotated_frame = results[0].plot()
     
@@ -67,13 +77,14 @@ async def detect_fish(file: UploadFile = File(...)):
     jpg_as_text = base64.b64encode(buffer).decode('utf-8')
     
     # Prepare response
-    if detected_class and max_conf > 0.8:  # Confidence threshold
+    if detected_class and max_conf > 0.6:  # Confidence threshold
         result = {
             "status": "success",
             "result": f"{detected_class} ({max_conf:.1%})",
             "image": jpg_as_text,
             "confidence": max_conf,
-            "detections": detections
+            "detections": detections,
+            "device": device
         }
     else:
         # Convert original image to base64 (no detection)
@@ -84,7 +95,8 @@ async def detect_fish(file: UploadFile = File(...)):
             "result": "No fish detected",
             "image": jpg_as_text,
             "confidence": 0,
-            "detections": []
+            "detections": [],
+            "device": device
         }
     
     return JSONResponse(result)

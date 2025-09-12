@@ -8,19 +8,20 @@ Requires-Dist: fastapi>=0.115.0
 Requires-Dist: uvicorn>=0.30.0
 Requires-Dist: opencv-python>=4.10.0
 Requires-Dist: ultralytics>=8.2.0
+Requires-Dist: torch>=2.8.0
 
 # poc-ikan
 
 ## Fish Detection with Webcam using FastAPI
 
-This project demonstrates real-time fish detection using a webcam, YOLO model, and FastAPI.
+This project demonstrates fish detection using a client-side webcam, YOLO model, and FastAPI backend.
 
 ### Features
 
-- Real-time webcam video streaming
-- Fish detection using YOLO model
-- Web interface with start/stop scanning controls
-- Automatic detection confirmation after 3 seconds of consistent detection
+- Client-side webcam access (browser-based)
+- Capture images and send to backend for fish detection
+- Real-time fish detection using YOLO model
+- Web interface with start/capture/reset controls
 
 ### Installation
 
@@ -38,26 +39,26 @@ This project demonstrates real-time fish detection using a webcam, YOLO model, a
 
 1. Run the FastAPI application:
    ```bash
-   uvicorn webcam_api:app --host 0.0.0.0 --port 3000 --reload
+   uvicorn main:app --host 0.0.0.0 --port 3000 --reload
    ```
 
    Or:
    ```bash
-   python webcam_api.py
+   python main.py
    ```
 
 2. Open your browser and navigate to `http://localhost:3000`
 
-3. Click "Start Scanning" to begin fish detection
+3. Click "Start Webcam" to access your camera
 
-4. The system will automatically capture and display the result when a fish is detected with high confidence
+4. Click "Capture & Detect" to capture an image and send it to the backend for fish detection
+
+5. View the detection results with annotated image
 
 ### API Endpoints
 
 - `GET /` - Serve the main web interface
-- `GET /video` - Stream webcam video with detection overlay
-- `GET /result` - Get current detection result
-- `GET /reset` - Reset detection state
+- `POST /detect` - Receive image and return detection results
 
 ### Dependencies
 

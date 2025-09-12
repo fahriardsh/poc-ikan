@@ -15,7 +15,7 @@ This project demonstrates fish detection using a client-side webcam, YOLO model,
 
 1. Install dependencies using UV:
    ```bash
-   uv pip install -e .
+   uv install
    ```
 
    Or using pip:
@@ -27,7 +27,7 @@ This project demonstrates fish detection using a client-side webcam, YOLO model,
 
 1. Run the FastAPI application:
    ```bash
-   uvicorn main:app --host 0.0.0.0 --port 3000 --reload
+   uv run main.py
    ```
 
    Or:
@@ -54,3 +54,4 @@ This project demonstrates fish detection using a client-side webcam, YOLO model,
 - Uvicorn - ASGI server
 - OpenCV - Computer vision library
 - Ultralytics - YOLO implementation
+- *.pt - for the pretrained model
